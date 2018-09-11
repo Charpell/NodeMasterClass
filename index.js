@@ -6,27 +6,11 @@ var http = require("http");
 var https = require('https');
 var url = require("url");
 var StringDecoder = require("string_decoder").StringDecoder;
-var config = require('./config');
+var config = require('./lib/config');
 var fs = require('fs');
-var _data = require('./lib/data');
+var handlers = require('./lib/handlers');
+var helpers = require('./lib/helpers')
 
-// TESTING
-_data.create('test', 'newFile', {'foo': 'bar'}, function(err){
-  console.log('This was the error', err)
-})
-
-_data.read('test', 'newFile', function(err, data){
-  console.log('This was the error', err)
-  console.log('This was the data', data)
-})
-
-_data.update('test', 'newFile', {'fizz': 'buzz'}, function(err, data){
-  console.log('This was the error', err)
-})
-
-_data.delete('test', 'newFile', function(err, data){
-  console.log('This was the error', err)
-})
 
 
 
@@ -98,7 +82,7 @@ var unifiedServer = function(req, res) {
         queryStringObject: queryStringObject,
         method: method,
         headers: headers,
-        payload: buffer
+        payload: helpers.parseJsonToObject(buffer)
       };
 
       choosenHandler(data, function(statusCode, payload) {
@@ -123,22 +107,8 @@ var unifiedServer = function(req, res) {
 }
 
 
-
-// Define the handlers
-var handlers = {};
-
-// Ping handlers
-handlers.ping = function(data, callback) {
-  // Callback a http status code and a payload object
-  callback(200);
-};
-
-// Not found handler
-handlers.notFound = function(data, callback) {
-  callback(404);
-};
-
 // Define a request router
 var router = {
-  'ping': handlers.ping
+  'ping': handlers.ping,
+  'users': handlers.users
 };
