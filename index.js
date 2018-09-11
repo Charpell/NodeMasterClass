@@ -8,6 +8,27 @@ var url = require("url");
 var StringDecoder = require("string_decoder").StringDecoder;
 var config = require('./config');
 var fs = require('fs');
+var _data = require('./lib/data');
+
+// TESTING
+_data.create('test', 'newFile', {'foo': 'bar'}, function(err){
+  console.log('This was the error', err)
+})
+
+_data.read('test', 'newFile', function(err, data){
+  console.log('This was the error', err)
+  console.log('This was the data', data)
+})
+
+_data.update('test', 'newFile', {'fizz': 'buzz'}, function(err, data){
+  console.log('This was the error', err)
+})
+
+_data.delete('test', 'newFile', function(err, data){
+  console.log('This was the error', err)
+})
+
+
 
 // Instantiate the HTTP server
 var httpServer = http.createServer(function(req, res) {
@@ -65,8 +86,6 @@ var unifiedServer = function(req, res) {
     req.on("end", function() {
       buffer += decoder.end();
 
-      console.log(trimmedPath)
-
       // Choose the handler this request should go to. If one is not found, use the notFound handler
       var choosenHandler =
         typeof router[trimmedPath] !== "undefined"
@@ -108,10 +127,10 @@ var unifiedServer = function(req, res) {
 // Define the handlers
 var handlers = {};
 
-// Sample handlers
-handlers.sample = function(data, callback) {
+// Ping handlers
+handlers.ping = function(data, callback) {
   // Callback a http status code and a payload object
-  callback(406, { name: "sample handler" });
+  callback(200);
 };
 
 // Not found handler
@@ -121,5 +140,5 @@ handlers.notFound = function(data, callback) {
 
 // Define a request router
 var router = {
-  sample: handlers.sample
+  'ping': handlers.ping
 };
