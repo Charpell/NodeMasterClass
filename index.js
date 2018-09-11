@@ -1,118 +1,29 @@
-/**
- * Primary file for the API
+/*
+ * Primary file for API
+ *
  */
 
-var http = require("http");
-var https = require('https');
-var url = require("url");
-var StringDecoder = require("string_decoder").StringDecoder;
-var config = require('./lib/config');
-var fs = require('fs');
-var handlers = require('./lib/handlers');
-var helpers = require('./lib/helpers')
+// Dependencies
+var server = require('./lib/server');
+var workers = require('./lib/workers');
 
+// Declare the app
+var app = {};
 
-helpers.sendTwilioSms('4847847848', 'Hello!', function(err){
-  console.log('this was the error', err)
-})
+// Init function
+app.init = function(){
 
-// Instantiate the HTTP server
-var httpServer = http.createServer(function(req, res) {
-  unifiedServer(req, res);
-});
+  // Start the server
+  server.init();
 
+  // Start the workers
+  workers.init();
 
-httpServer.listen(config.httpPort, function() {
-  console.log("The server is listening on port "+config.httpPort);
-});
-
-var httpsServerOptions = {
-  'key': fs.readFileSync('./https/key.pem'),
-  'cert': fs.readFileSync('./https/cert.pem')
 };
 
-// Instantiate the HTTPS server
-var httpsServer = https.createServer(httpsServerOptions, function(req, res) {
-  unifiedServer(req, res);
-});
-
-httpsServer.listen(config.httpsPort, function() {
-  console.log("The server is listening on port "+config.httpsPort);
-});
+// Self executing
+app.init();
 
 
-// All the server logic for both the http and https server
-var unifiedServer = function(req, res) {
-    // Get the HTTP Method
-    var method = req.method.toLowerCase();
-
-    // Get the headers as an object
-    var headers = req.headers;
-
-    // Get the URL and parse it
-    var parsedUrl = url.parse(req.url, true);
-
-    // Get the query string as an object { foo: 'buzz' }
-    var queryStringObject = parsedUrl.query;
-
-    // Get the path
-    var path = parsedUrl.pathname;
-    var trimmedPath = path.replace(/^\/+|\/+$/g, "");
-
-    // Get the payload, if any
-    var decoder = new StringDecoder("utf-8");
-    var buffer = "";
-
-    // Stream in a payload that is incoming
-    req.on("data", function(data) {
-      buffer += decoder.write(data);
-    });
-
-    // End Streaming
-    req.on("end", function() {
-      buffer += decoder.end();
-
-      // Choose the handler this request should go to. If one is not found, use the notFound handler
-      var choosenHandler =
-        typeof router[trimmedPath] !== "undefined"
-          ? router[trimmedPath]
-          : handlers.notFound;
-
-      // Construct the data object to send to the handler
-      var data = {
-        trimmedPath: trimmedPath,
-        queryStringObject: queryStringObject,
-        method: method,
-        headers: headers,
-        payload: helpers.parseJsonToObject(buffer)
-      };
-
-      choosenHandler(data, function(statusCode, payload) {
-        // Use the status code called back by the handler, or default to 200
-        statusCode = typeof statusCode == "number" ? statusCode : 200;
-
-        // Use the payload called back by the handler, or default to an empty object
-        payload = typeof payload == "object" ? payload : {};
-
-        // Convert the payload to a String
-        var payloadString = JSON.stringify(payload);
-
-        // Return the response
-        res.setHeader("Content-Type", "application/json");
-        res.writeHead(statusCode);
-        res.end(payloadString);
-
-        // Log the request path
-        console.log("Returning this response: ", statusCode, payloadString);
-      });
-    });
-}
-
-
-// Define a request router
-var router = {
-  'ping': handlers.ping,
-  'users': handlers.users,
-  'tokens': handlers.tokens,
-  'checks' : handlers.checks
-};
+// Export the app
+module.exports = app;
